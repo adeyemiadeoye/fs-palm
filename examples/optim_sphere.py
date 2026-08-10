@@ -1,9 +1,13 @@
 import jax.numpy as jnp
+# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
+# in the same environment would otherwise shadow it and the script would
+# exercise the published package instead of the working copy.
+import os as _os, sys as _sys
+_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
+if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+    _sys.path.insert(0, _SRC)
 import pbalm
 import numpy as np
-
-# \min_{x} \quad & c^T x \\
-#    \text{s.t.} \quad & \|x\|^2 = 1
 
 # Configure JAX
 import jax
