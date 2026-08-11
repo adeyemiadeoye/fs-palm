@@ -1,11 +1,13 @@
 import jax.numpy as jnp
+# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
+# in the same environment would otherwise shadow it and the script would
+# exercise the published package instead of the working copy.
+import os as _os, sys as _sys
+_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
+if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+    _sys.path.insert(0, _SRC)
 import pbalm
 import numpy as np
-
-
-# \min_{\theta} \quad & \sum_{i=1}^{m} (y_i - f(x_i; \theta))^2 \\
-#    \text{s.t.} \quad & \theta_1 + \theta_2 \leq 1 \\
-#                      & \theta \geq 0
 
 # Configure JAX
 import jax
