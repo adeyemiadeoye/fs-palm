@@ -31,7 +31,7 @@ of nonconvexity, sparsity level), not just size: a set drawn from one fixed
 construction is not really N problems, however many instances are drawn, and
 a profile over it measures within-family scatter rather than breadth.
 
-That last point matters practically: P-BALM requires a feasible starting
+That last point matters practically: FS-P-ALM requires a feasible starting
 point, and here one is available in closed form, so no phase I solve is
 needed and the benchmark measures the outer algorithm rather than a
 feasibility heuristic.
@@ -222,8 +222,8 @@ def make_instances(n_instances, seed0=0, c=None, dims=None, mratio=None,
 
 
 # -------------------------------------------------- solver-side builders ---
-def pbalm_problem(inst, pbalm_mod, jittable=True):
-    """Build the pbalm.Problem for this instance."""
+def fs_palm_problem(inst, fs_palm_mod, jittable=True):
+    """Build the fs_palm.Problem for this instance."""
     P0, q0, Ps, qs, rs = inst.P0, inst.q0, inst.Ps, inst.qs, inst.rs
 
     def f1(x):
@@ -232,7 +232,7 @@ def pbalm_problem(inst, pbalm_mod, jittable=True):
     def g(x):
         return 0.5 * jnp.einsum("mij,i,j->m", Ps, x, x) + qs @ x - rs
 
-    return pbalm_mod.Problem(f1=f1, f2=pbalm_mod.L1Norm(inst.lmbda),
+    return fs_palm_mod.Problem(f1=f1, f2=fs_palm_mod.L1Norm(inst.lmbda),
                              g=[g], jittable=jittable)
 
 
@@ -321,16 +321,16 @@ if __name__ == "__main__":
     # produces the sample plots by handing off to qcqp_sample (which is where
     # the plotting lives, and which takes command-line options -- see
     # `python qcqp_sample.py --help`).
-    # Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
+    # Prefer this repo's solver over any installed fs_palm. A pip-installed fs_palm
     # in the same environment would otherwise shadow it and the script would
     # exercise the published package instead of the working copy.
     import os as _os, sys as _sys
     _SRC = _os.path.join(_os.path.dirname(_os.path.dirname(
         _os.path.dirname(_os.path.abspath(__file__)))), "src")
-    if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+    if _os.path.isdir(_os.path.join(_SRC, "fs_palm")) and _SRC not in _sys.path:
         _sys.path.insert(0, _SRC)
 
-    import pbalm
+    import fs_palm
 
     inst = make_instance(0, n=50, m=10)
     x0 = np.asarray(inst.x0())
@@ -347,12 +347,12 @@ if __name__ == "__main__":
           f"violation={inst.violation(x_ip):.2e}  nnz={inst.nnz(x_ip)}/{inst.n}  "
           f"status={info['status']}")
 
-    prob = pbalm_problem(inst, pbalm, jittable=True)
-    sol = pbalm.solve(prob, inst.x0(), tol=1e-6, max_iter=500,
+    prob = fs_palm_problem(inst, fs_palm, jittable=True)
+    sol = fs_palm.solve(prob, inst.x0(), tol=1e-6, max_iter=500,
                       use_proximal=True, phi_strategy="pow", xi1=1.0, xi2=1.0,
                       alpha=4, verbosity=0)
     x_pb = np.asarray(sol.x)
-    print(f"  P-BALM: F={inst.objective(x_pb):+.8e}  "
+    print(f"  FS-P-ALM: F={inst.objective(x_pb):+.8e}  "
           f"violation={inst.violation(x_pb):.2e}  nnz={inst.nnz(x_pb)}/{inst.n}  "
           f"status={sol.solve_status}  grad_evals={sol.grad_evals[-1]}")
 

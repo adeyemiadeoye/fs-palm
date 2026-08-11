@@ -12,7 +12,7 @@ reg_classes = [pa.functions.L1Norm, pa.Box, pa.functions.NuclearNorm]
 
 class Solution:
     """
-    Holds the solution process and data for PBALM.
+    Holds the solution process and data for FS-P-ALM.
     """
     def __init__(self, problem, x0, inner_solve_runner, lbda0, mu0, rho0, nu0, gamma0, x_shapes=None, x_cumsizes=None, use_proximal=False, beta=0.5, alpha=2.0, alpha_gamma=1.01, delta="auto", xi1=1.0, xi2=1.0, tol=1e-6, fp_tol=None, max_iter=1000, phase_I_tol=1e-7, start_feas=True, inner_solver="PANOC", max_iter_inner=None, pa_solver_opts=None, pa_direction=None, verbosity=1, max_runtime=24.0, phi_strategy="pow", feas_reset_interval=None, no_reset=False, adaptive_fp_tol=True, tau0=0.1, kappa_tol=0.5, penalty_horizon=30, penalty_ramp=5.0, penalty_kappa=1e2, delta_rule="objective", gamma_kappa=1e3, penalty_max=1e20, phase_I_residual=None):
         self.problem = problem
@@ -157,7 +157,7 @@ class Solution:
 
         # Phase I is signalled by supplying the true-residual callable itself:
         # when set, the stopping test uses it instead of this (auxiliary)
-        # problem's own infeasibility. See the stopping test in pbalm().
+        # problem's own infeasibility. See the stopping test in fs_palm().
         self.phase_I_residual = phase_I_residual
         self.is_phase_I = phase_I_residual is not None
         # E^k baseline for the nu-update test (state:proxALM:nu) must be evaluated
@@ -376,7 +376,7 @@ class Solution:
         else:
             return 0.0
 
-    def pbalm(self):
+    def fs_palm(self):
         total_start_time = time.time()
         start_time = time.time()
         warmup_end_time = None
@@ -403,7 +403,7 @@ class Solution:
                 print(f"{'Objective value:':<25} {self.f_hist[-1]:.6e}")
             # status is state, not output -- see the note in the main loop
             self.solve_status = state['status']
-            if self.solve_status.startswith("SolverStatus."): # match pbalm style
+            if self.solve_status.startswith("SolverStatus."): # match fs_palm style
                 self.solve_status = self.solve_status[len("SolverStatus."):]
             return
 
@@ -839,7 +839,7 @@ class Solution:
         self.solve_runtime = time.time() - solve_start_time
         if self.verbosity > 0 and self.n_inner_incomplete:
             print(f"{'inner solves < tau_k:':<25} {self.n_inner_incomplete} of "
-                  f"{len(self.f_hist)} (best iterate returned; see the note in pbalm())")
+                  f"{len(self.f_hist)} (best iterate returned; see the note in fs_palm())")
         return
 
     # @partial(jax.jit, static_argnums=0)

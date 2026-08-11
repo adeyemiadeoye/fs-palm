@@ -1,6 +1,6 @@
 import numpy as np
 import jax.numpy as jnp
-import pbalm
+import fs_palm
 from ..utils.utils import algencan_penalty0
 
 np.NaN = np.nan
@@ -33,7 +33,7 @@ class PaProblem(pa.BoxConstrProblem):
         super().__init__(x0.shape[0], 0)
         self.jit_loss = jax.jit(obj_fun) if jittable else obj_fun
         self.init_x = x0
-        if type(f2) == pbalm.Box:
+        if type(f2) == fs_palm.Box:
             self.variable_bounds.lower = f2.lower
             self.variable_bounds.upper = f2.upper
         if l1_lbda is not None:
@@ -45,7 +45,7 @@ class PaProblem(pa.BoxConstrProblem):
                 raise ValueError(f"Invalid L1 regularization list length: {len(l1_lbda)}; expected {x0.shape[0]}.")
             else:
                 self.l1_reg = l1_lbda
-        elif type(f2) == pbalm.L1Norm:
+        elif type(f2) == fs_palm.L1Norm:
             self.l1_reg = [f2.λ]
         else:
             self.l1_reg = [0.0]
@@ -111,16 +111,16 @@ def phase_I_optim(x0, h, g, f2, lbda0, mu0, alphas=(1.01, 2, 5, 10), gamma0="aut
     """
     Solves the Phase I feasibility problem (Appendix "The phase I problem for
     initialization") to find an initial feasible point, via a single call to
-    P-BALM itself on the auxiliary problem.
+    FS-P-ALM itself on the auxiliary problem.
 
     Two conditions matter for this to work as intended:
      (1) The starting point z^0=(x^0,s^0) must itself be feasible for the
-         auxiliary problem's only constraint g(x)<=s, as P-BALM requires a
+         auxiliary problem's only constraint g(x)<=s, as FS-P-ALM requires a
          feasible start -- so s^0 = max(g(x^0)), not 0.
      (2) The stopping test must require real progress on the *original*
          h(x), g(x), not just satisfaction of the auxiliary g(x)<=s (which
          holds trivially from a feasible start without s, or h(x) folded
-         into f1, ever shrinking). We therefore hand Solution.pbalm() the
+         into f1, ever shrinking). We therefore hand Solution.fs_palm() the
          true-residual callable `true_residual` below and it terminates on
          max(||h(x)||_inf, ||max(g(x),0)||_inf) directly -- the same
          quantity verified on return, and the definition of the feasible
@@ -139,14 +139,14 @@ def phase_I_optim(x0, h, g, f2, lbda0, mu0, alphas=(1.01, 2, 5, 10), gamma0="aut
     (best) iterate -- a genuine descent method never returns a worse point,
     it just under-converges -- and the outer loop's own stopping test
     (which includes this residual) correctly keeps iterating rather than
-    declaring false convergence. The caller (pbalm.py) passes the same
+    declaring false convergence. The caller (fs_palm.py) passes the same
     per-inner-solver value the main solve loop uses (1000 for PANOC, 5000
     for ProxGrad -- ProxGrad has no curvature information, so it needs a
     substantially larger budget to make comparable progress); the default
     here is only a fallback for calling this function directly.
 
     On alpha: penalty growth here is nu_k = nu0*phi(k+1) = nu0*(k+1)^alpha
-    (P-BALM fixes xi1=xi2=1, so the schedule is the *only* growth mechanism).
+    (FS-P-ALM fixes xi1=xi2=1, so the schedule is the *only* growth mechanism).
     alpha therefore sets the entire trajectory, and too large a value drives
     nu into a range where the inner subproblem is numerically hopeless: with
     the original alpha=20, nu reached ~1e16 within ~10 outer iterations, PANOC
@@ -167,7 +167,7 @@ def phase_I_optim(x0, h, g, f2, lbda0, mu0, alphas=(1.01, 2, 5, 10), gamma0="aut
     initialization rule (rho_1 = max{1e-8, min{10, 2|f(x0)|/||c(x0)||^2}}) was
     tried here and made things *worse* -- it is designed for safeguarded
     multiplicative growth (rho <- 10*rho, reactive and slow), where starting at
-    the right scale matters. Under P-BALM's open-loop schedule nu0 is not a
+    the right scale matters. Under FS-P-ALM's open-loop schedule nu0 is not a
     starting scale but a multiplier on the whole trajectory, so scaling it up
     by ~2000x (the rule returns nu0=2 on the portfolio problem vs the 1e-3
     default) merely reaches the ill-conditioned regime ~2000x sooner: every
@@ -185,7 +185,7 @@ def phase_I_optim(x0, h, g, f2, lbda0, mu0, alphas=(1.01, 2, 5, 10), gamma0="aut
         feas_f = lambda z: 0.5*jnp.sum(h(z)**2)
         feas_g = None
 
-    feas_prob = pbalm.Problem(
+    feas_prob = fs_palm.Problem(
                     f1=feas_f,
                     g=[feas_g] if feas_g is not None else None,
                     h=None,
@@ -219,21 +219,21 @@ def phase_I_optim(x0, h, g, f2, lbda0, mu0, alphas=(1.01, 2, 5, 10), gamma0="aut
     target = max(tol, 1e-5)
     best = (jnp.inf, None, None)
 
-    # alpha is the sole driver of penalty growth (P-BALM fixes xi=1) and,
+    # alpha is the sole driver of penalty growth (FS-P-ALM fixes xi=1) and,
     # unlike gamma and nu, it is *not* adapted during a run -- so trying a few
     # values reaches configurations no single run can. nu_0 and alpha trade
     # off against each other (a small nu_0 needs a larger alpha to reach a
     # useful magnitude in time, and vice versa), which is why one fixed pair
     # cannot be robust across problems.
     for a in alphas:
-        prob_a = pbalm.Problem(f1=feas_f, g=[feas_g] if feas_g is not None else None,
-                               h=None, jittable=True)
+        prob_a = fs_palm.Problem(f1=feas_f, g=[feas_g] if feas_g is not None else None,
+                                 h=None, jittable=True)
         try:
-            res_a = pbalm.solve(prob_a, z0, lbda0=lbda0, mu0=mu0, use_proximal=True,
-                                tol=tol, max_iter=max_iter, max_iter_inner=max_iter_inner,
-                                alpha=a, gamma0=gamma0, nu0=nu0, rho0=nu0,
-                                start_feas=False, inner_solver=inner_solver,
-                                verbosity=0, phase_I_residual=true_residual)
+            res_a = fs_palm.solve(prob_a, z0, lbda0=lbda0, mu0=mu0, use_proximal=True,
+                                  tol=tol, max_iter=max_iter, max_iter_inner=max_iter_inner,
+                                  alpha=a, gamma0=gamma0, nu0=nu0, rho0=nu0,
+                                  start_feas=False, inner_solver=inner_solver,
+                                  verbosity=0, phase_I_residual=true_residual)
         except Exception as exc:                       # keep trying other alphas
             if verbose:
                 print(f"  Phase I: alpha={a} raised {type(exc).__name__}: {exc}")
@@ -285,12 +285,12 @@ def _make_prox(f2=None, l1_lbda=None, n=None):
     """
     lower = upper = None
     lam = None
-    if isinstance(f2, pbalm.Box):
+    if isinstance(f2, fs_palm.Box):
         lower = jnp.asarray(f2.lower)
         upper = jnp.asarray(f2.upper)
     if l1_lbda is not None:
         lam = jnp.asarray(l1_lbda, dtype=float)
-    elif isinstance(f2, pbalm.L1Norm):
+    elif isinstance(f2, fs_palm.L1Norm):
         lam = jnp.asarray(float(f2.λ))
 
     def prox(v, gamma):

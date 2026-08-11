@@ -1,12 +1,5 @@
 import jax.numpy as jnp
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
-# in the same environment would otherwise shadow it and the script would
-# exercise the published package instead of the working copy.
-import os as _os, sys as _sys
-_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
-    _sys.path.insert(0, _SRC)
-import pbalm
+import fs_palm
 import numpy as np
 
 # Configure JAX
@@ -41,7 +34,7 @@ def g2(theta):
     return -theta  # theta >= 0 (element-wise)
 
 # Create problem
-problem = pbalm.Problem(
+problem = fs_palm.Problem(
     f1=f1,
     g=[g1, g2],
     jittable=True
@@ -51,7 +44,7 @@ problem = pbalm.Problem(
 theta0 = jnp.array([0.3, 1.0])
 
 # Solve
-result = pbalm.solve(
+result = fs_palm.solve(
     problem,
     theta0,
     tol=1e-6,

@@ -33,7 +33,7 @@ import sys
 
 import numpy as np
 
-SOLVERS = ["pbalm", "alpaqa_alm"]
+SOLVERS = ["fs_palm", "alpaqa_alm"]
 LABELS = [r"\texttt{FS-P-ALM}", r"\texttt{alpaqa ALM}"]
 EPS_FEAS = 1e-5
 
@@ -63,7 +63,7 @@ def returned_gap(tag):
 
 def main(panoc_tag, proxgrad_tag, out):
     sys.path.insert(0, "../../src")
-    from pbalm.utils.plotting import setup_matplotlib
+    from fs_palm.utils.plotting import setup_matplotlib
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt

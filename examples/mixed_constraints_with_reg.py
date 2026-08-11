@@ -1,13 +1,10 @@
 import jax.numpy as jnp
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
-# in the same environment would otherwise shadow it and the script would
-# exercise the published package instead of the working copy.
-import os as _os, sys as _sys
-_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
-    _sys.path.insert(0, _SRC)
-import pbalm
+import fs_palm
 import numpy as np
+
+#    \min_{x} \quad & \frac{1}{2}\|Ax - b\|^2 + \lambda \|x\|_1 \\
+#    \text{s.t.} \quad & \mathbf{1}^T x = 1 \\
+#                      & x \geq 0
 
 # Configure JAX
 import jax
@@ -36,10 +33,10 @@ def g(x):
 
 # L1 regularization
 f2_lbda = 0.1
-f2 = pbalm.L1Norm(f2_lbda)
+f2 = fs_palm.L1Norm(f2_lbda)
 
 # Create problem
-problem = pbalm.Problem(
+problem = fs_palm.Problem(
     f1=f1,
     h=[h],
     g=[g],
@@ -49,7 +46,7 @@ problem = pbalm.Problem(
 
 x0 = jnp.ones(n) / n
 
-result = pbalm.solve(
+result = fs_palm.solve(
     problem,
     x0,
     tol=1e-5,

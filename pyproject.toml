@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 version_scheme = "no-guess-dev"
 
 [project]
-name = "pbalm"
-version = "0.1.7"
-description = "Software package accompanying PBALM paper (with examples)."
+name = "fs-palm"
+version = "0.1.8"
+description = "Software package accompanying FS-P-ALM paper (with examples)."
 readme = { file = "README.md", content-type = "text/markdown; charset=UTF-8" }
 authors = [
   { name = "Adeyemi D. Adeoye", email = "adeyemi.adeoye@imtlucca.it" },
@@ -40,9 +40,9 @@ testing = [
 ]
 
 [project.urls]
-"Documentation" = "https://github.com/adeyemiadeoye/p-balm"
-"Source" = "https://github.com/adeyemiadeoye/p-balm"
-"Issue Tracker" = "https://github.com/adeyemiadeoye/p-balm/issues"
+"Documentation" = "https://github.com/adeyemiadeoye/fs-palm"
+"Source" = "https://github.com/adeyemiadeoye/fs-palm"
+"Issue Tracker" = "https://github.com/adeyemiadeoye/fs-palm/issues"
 
 [tool.setuptools]
 include-package-data = true
@@ -56,7 +56,7 @@ where = ["src"]
 exclude = ["tests"]
 
 [tool.pytest.ini_options]
-addopts = "--cov pbalm --cov-report term-missing --verbose"
+addopts = "--cov fs-palm --cov-report term-missing --verbose"
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]
 

@@ -125,7 +125,7 @@ class Instance:
         one coordinate per index, and by the gradient identity in the module
         docstring those stay zero for the whole run. Do not set c = 0.
 
-        This supplies the feasible initialisation P-BALM requires (Table 1)
+        This supplies the feasible initialisation FS-P-ALM requires (Table 1)
         without a phase I solve, so the experiment measures the outer
         algorithm rather than a feasibility heuristic.
         """
@@ -202,8 +202,8 @@ def make_instances(n_instances, seed0=0, sizes=None, krange=None):
 
 
 # -------------------------------------------------- solver-side builders ---
-def pbalm_problem(inst, pbalm_mod, jittable=True):
-    """Build the pbalm.Problem for this instance."""
+def fs_palm_problem(inst, fs_palm_mod, jittable=True):
+    """Build the fs_palm.Problem for this instance."""
     Bbar, bj = inst.Bbar, inst.bj
 
     def f1(x):
@@ -212,7 +212,7 @@ def pbalm_problem(inst, pbalm_mod, jittable=True):
     def h(x):
         return Bbar @ (x ** 2) - bj
 
-    return pbalm_mod.Problem(f1=f1, h=[h], jittable=jittable)
+    return fs_palm_mod.Problem(f1=f1, h=[h], jittable=jittable)
 
 
 if __name__ == "__main__":

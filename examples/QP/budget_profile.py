@@ -5,8 +5,8 @@ written by alpaqa_alm_bench.py. Neither requires re-running a solver, and
 neither depends on wall-clock time.
 
 WHY NOT WALL CLOCK. The two solvers cost very different amounts per gradient
-evaluation, measured at 2.39e-3 s/eval for pbalm against 6.09e-5 for alpaqa,
-a factor of about 39, because pbalm is Python and JAX while alpaqa is
+evaluation, measured at 2.39e-3 s/eval for fs_palm against 6.09e-5 for alpaqa,
+a factor of about 39, because fs_palm is Python and JAX while alpaqa is
 compiled C++. Any shared wall-clock cap therefore hands one solver a much
 larger effective budget than the other, which is the implementation gap the
 gradient-evaluation metric exists to remove. Capping evaluations instead is
@@ -35,7 +35,7 @@ import sys
 
 import numpy as np
 
-SOLVERS = ["pbalm", "alpaqa_alm"]
+SOLVERS = ["fs_palm", "alpaqa_alm"]
 LABELS = [r"\texttt{FS-P-ALM}", r"\texttt{alpaqa ALM}"]
 FTOL = 1e-1
 
@@ -134,7 +134,7 @@ def solved_within(hist, killed, insts, f_best, budget, tau):
 
 
 def main(tags):
-    from pbalm.utils.plotting import setup_matplotlib
+    from fs_palm.utils.plotting import setup_matplotlib
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -166,7 +166,7 @@ def main(tags):
 
         for B in [1e3, 1e4, 1e5, 1e6, 2.5e6]:
             s, c = solved_within(hist, killed, insts, f_best, B, tau)
-            print(f"  B={B:9.0e}  pbalm {s[:,0].sum():2d}/{n}"
+            print(f"  B={B:9.0e}  fs_palm {s[:,0].sum():2d}/{n}"
                   f" (censored {c[:,0].sum():2d})   "
                   f"alpaqa {s[:,1].sum():2d}/{n} (censored {c[:,1].sum():2d})")
 
@@ -199,7 +199,7 @@ def main(tags):
         print(f"  wrote {out}")
         for t in [1e-1, 1e-3, 1e-5, 1e-8]:
             s, c = solved_within(hist, killed, insts, f_best, B_full, t)
-            print(f"  tau={t:.0e}  pbalm {s[:,0].sum():2d}/{n}"
+            print(f"  tau={t:.0e}  fs_palm {s[:,0].sum():2d}/{n}"
                   f" (censored {c[:,0].sum():2d})   "
                   f"alpaqa {s[:,1].sum():2d}/{n} (censored {c[:,1].sum():2d})")
 

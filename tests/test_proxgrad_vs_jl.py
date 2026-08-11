@@ -35,7 +35,7 @@ import tempfile
 import os as _os, sys as _sys
 _SRC = _os.path.join(_os.path.dirname(_os.path.dirname(
     _os.path.abspath(__file__))), "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+if _os.path.isdir(_os.path.join(_SRC, "fs_palm")) and _SRC not in _sys.path:
     _sys.path.insert(0, _SRC)
 
 import numpy as np
@@ -43,8 +43,8 @@ import jax
 jax.config.update("jax_platform_name", "cpu")
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import pbalm
-from pbalm.inner_solvers.inner_solvers import get_proxgrad_run
+import fs_palm
+from fs_palm.inner_solvers.inner_solvers import get_proxgrad_run
 
 JULIA = os.environ.get("JULIA", "/opt/julia/julia-1.12.1/bin/julia")
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -102,10 +102,10 @@ def ours(p):
         return 0.5 * jnp.dot(r, r)
 
     if p["prox"] == "l1":
-        f2, lam = pbalm.L1Norm(float(p["lam"])), float(p["lam"])
+        f2, lam = fs_palm.L1Norm(float(p["lam"])), float(p["lam"])
     else:
         n = p["A"].shape[1]
-        f2, lam = pbalm.Box(
+        f2, lam = fs_palm.Box(
             lower=np.full(n, p["lo"]), upper=np.full(n, p["hi"])), None
     run = get_proxgrad_run(f2=f2, l1_lbda=lam, jittable=True)
     x, info = run.train_fun(f, jnp.asarray(p["x0"]), 200000, 1e-12)

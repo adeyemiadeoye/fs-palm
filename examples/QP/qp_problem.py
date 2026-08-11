@@ -48,16 +48,16 @@ from pathlib import Path
 import numpy as np
 import jax
 import jax.numpy as jnp
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
+# Prefer this repo's solver over any installed fs_palm. A pip-installed fs_palm
 # in the same environment would otherwise shadow it and the script would
 # benchmark the published package instead of the working copy.
 import os as _os, sys as _sys
 _SRC = _os.path.join(_os.path.dirname(_os.path.dirname(
     _os.path.dirname(_os.path.abspath(__file__)))), "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+if _os.path.isdir(_os.path.join(_SRC, "fs_palm")) and _SRC not in _sys.path:
     _sys.path.insert(0, _SRC)
 
-import pbalm
+import fs_palm
 
 jax.config.update("jax_platform_name", "cpu")
 if not jax.config.jax_enable_x64:
@@ -167,7 +167,7 @@ def make_instance(seed, n=100, m=50, cond=1e4, n_active=None, box=10.0,
     with `n_active` of them made tight at it, so that
 
       * x0 = x_feas is STRICTLY feasible for the inequalities and inside the
-        box, giving the feasible start P-BALM needs with no phase I, and
+        box, giving the feasible start FS-P-ALM needs with no phase I, and
       * the solution is genuinely constrained -- without some tight rows the
         QP would reduce to its unconstrained minimiser and the constraint
         handling, which is what the paper is about, would not be exercised.
@@ -283,8 +283,8 @@ def load_cutest(name, cutest_dir=None, seed=1234):
 
 
 # -------------------------------------------------- solver-side builders ---
-def pbalm_problem(inst, pbalm_mod, jittable=True):
-    """Build the pbalm.Problem for this instance."""
+def fs_palm_problem(inst, fs_palm_mod, jittable=True):
+    """Build the fs_palm.Problem for this instance."""
     Q = jnp.array(inst.Q)
     q = jnp.array(inst.q)
     c = float(inst.c)
@@ -304,9 +304,9 @@ def pbalm_problem(inst, pbalm_mod, jittable=True):
 
     # Box is alpaqa's, which is bound to Eigen and takes plain float64 numpy
     # arrays -- a jnp array raises a constructor TypeError.
-    box = pbalm_mod.Box(lower=np.ascontiguousarray(inst.x_lb, dtype=np.float64),
+    box = fs_palm_mod.Box(lower=np.ascontiguousarray(inst.x_lb, dtype=np.float64),
                         upper=np.ascontiguousarray(inst.x_ub, dtype=np.float64))
-    return pbalm_mod.Problem(f1=f1, f1_grad=f1_grad, f2=box,
+    return fs_palm_mod.Problem(f1=f1, f1_grad=f1_grad, f2=box,
                              g=[g] if A is not None else None,
                              jittable=jittable)
 

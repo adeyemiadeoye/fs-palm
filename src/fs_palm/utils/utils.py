@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pbalm
+import fs_palm
 
 def params_flatten(params):
     return jnp.concatenate([p.flatten() if isinstance(p, jnp.ndarray) else jnp.array([p]) for p in params])
@@ -69,7 +69,7 @@ def rule1_penalty0(f0, viol_sq, alpha, horizon=30):
 
         rho_0 = rho_base / (horizon+1)^alpha
 
-    P-BALM grows the penalty as rho_k = rho_0 (k+1)^alpha, so rho_0 and alpha
+    FS-P-ALM grows the penalty as rho_k = rho_0 (k+1)^alpha, so rho_0 and alpha
     are not independent: what matters is the magnitude the trajectory reaches
     by the time the method is expected to converge. Anchoring at a scale-aware
     rho_base (guarded_penalty_base) and dividing by the growth factor at the
@@ -91,7 +91,7 @@ def rule1_penalty0(f0, viol_sq, alpha, horizon=30):
 
 def rule3_penalty0(L_obj, J_con_sq, alpha, kappa=1e2, ramp=5.0,
                    lo=1e-14, hi=1e14, growth=None):
-    """Rule 3 (the default; see resolve() in pbalm.py): a curvature-ratio
+    """Rule 3 (the default; see resolve() in fs_palm.py): a curvature-ratio
     anchor reached over a SHORT ramp, on corrected curvature estimates, with
     the dimensionless constant actually calibrated.
 
@@ -102,7 +102,7 @@ def rule3_penalty0(L_obj, J_con_sq, alpha, kappa=1e2, ramp=5.0,
     anchored at the full outer-iteration horizon rather than a curvature
     ratio reached early -- see rule1_penalty0).
 
-    THE SCALE. At a strictly feasible x0 -- what \\PBALM{} requires -- a
+    THE SCALE. At a strictly feasible x0 -- what \\PFS-ALM{} requires -- a
     value-based anchor like Birgin & Martinez's 2|f|/||c||^2 degenerates:
     ||c(x0)||=0 leaves it a pure objective magnitude, carrying no information
     about the constraints. A ratio of CURVATURES does not degenerate: the
@@ -141,7 +141,7 @@ def rule3_penalty0(L_obj, J_con_sq, alpha, kappa=1e2, ramp=5.0,
     at the target scale.
 
     `growth=None` keeps the (ramp+1)^alpha behaviour for backward compatibility;
-    pbalm passes the correct one for the configured phi_strategy.
+    fs_palm passes the correct one for the configured phi_strategy.
 
     Three things separate this from rule2 (removed from this module -- it had
     no remaining callers once this rule replaced it everywhere; kept only by
@@ -391,12 +391,12 @@ def lipschitz_gamma0(grad_fn, x0, kappa=1e3, lo=1e-8, hi=1e4, rel_eps=1e-6,
 
     Measured, gradient evaluations, kappa = 1 -> 1e2:
 
-        basis pursuit  p=60,  n=150, alpha=4    4045 -> 914   (P-BALM)
+        basis pursuit  p=60,  n=150, alpha=4    4045 -> 914   (FS-P-ALM)
         basis pursuit  p=60,  n=150, alpha=6   18879 -> 1747
         basis pursuit  p=100, n=256, alpha=4    5078 ->  753
         QCQP           5 instances, alpha=2,4   0.26x to 0.82x of kappa=1
 
-    On basis pursuit this is the difference between P-BALM losing to BALM
+    On basis pursuit this is the difference between FS-P-ALM losing to FS-ALM
     (1.8-9.4x worse) and beating it (2.2-2.4x better); on QCQP it is never
     worse. hi is 1e4 rather than 1e2 so that the clip does not silently undo
     the kappa scaling on well-conditioned problems.

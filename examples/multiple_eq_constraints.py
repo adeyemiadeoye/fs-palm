@@ -1,12 +1,9 @@
 import jax.numpy as jnp
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
-# in the same environment would otherwise shadow it and the script would
-# exercise the published package instead of the working copy.
-import os as _os, sys as _sys
-_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
-    _sys.path.insert(0, _SRC)
-import pbalm
+import fs_palm
+
+#    \min_{x} \quad & x_1^2 + x_2^2 + x_3^2 \\
+#    \text{s.t.} \quad & x_1 x_2 = 1 \\
+#                      & x_2 x_3 = 2
 
 def f1(x):
     return jnp.sum(x**2)
@@ -18,7 +15,7 @@ def h2(x):
     return x[1] * x[2] - 2.0
 
 # Create problem with multiple equality constraints
-problem = pbalm.Problem(
+problem = fs_palm.Problem(
     f1=f1,
     h=[h1, h2],
     jittable=True
@@ -26,10 +23,10 @@ problem = pbalm.Problem(
 
 x0 = jnp.array([1.0, 1.0, 2.0])
 
-result = pbalm.solve(
+result = fs_palm.solve(
     problem,
     x0,
-    tol=1e-9
+    tol=1e-4
 )
 
 print(f"Solution: {result.x}")

@@ -1,6 +1,6 @@
 """Illustrative per-problem plots for the convex QPs.
 
-Compares BALM/P-BALM against classic ALM under different levels of
+Compares FS-ALM/FS-P-ALM against classic ALM under different levels of
 complexity via the condition number kappa(Q), with alpha = 12 and xi = 10.
 Two modes:
 
@@ -21,8 +21,8 @@ Two modes:
 Conventions:
 
     ALM-xi        xi > 1, phi(k) = 0, no Step-1 reset      (classic ALM)
-    BALM-alpha    xi = 1, phi(k) = (k+1)^alpha
-    P-BALM-alpha  as BALM plus the proximal term
+    FS-ALM-alpha    xi = 1, phi(k) = (k+1)^alpha
+    FS-P-ALM-alpha  as FS-ALM plus the proximal term
 
 ALM is a heuristic baseline NOT covered by the paper's theory (phi = 0 falls
 outside the penalty assumption); it is kept as an ablation.
@@ -54,19 +54,19 @@ matplotlib.use("Agg")     # these scripts only write PDFs; the default
                           # teardown ("main thread is not in main loop")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
+# Prefer this repo's solver over any installed fs_palm. A pip-installed fs_palm
 # in the same environment would otherwise shadow it and the script would
 # benchmark the published package instead of the working copy.
 import os as _os, sys as _sys
 _SRC = _os.path.join(_os.path.dirname(_os.path.dirname(
     _os.path.dirname(_os.path.abspath(__file__)))), "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+if _os.path.isdir(_os.path.join(_SRC, "fs_palm")) and _SRC not in _sys.path:
     _sys.path.insert(0, _SRC)
 
-import pbalm
+import fs_palm
 
-from pbalm.utils.plotting import setup_matplotlib, inner_solvers
-from qp_problem import (make_instance, load_cutest, pbalm_problem,
+from fs_palm.utils.plotting import setup_matplotlib, inner_solvers
+from qp_problem import (make_instance, load_cutest, fs_palm_problem,
                         MM_COND_PROBLEMS, CONDS)
 
 
@@ -85,7 +85,7 @@ _RULES = ("rule1", "rule3", "auto")
 def _as_rule(v):
     """Accept a named rule or a numeric value from the CLI.
 
-    Kept in sync with the strategies pbalm.solve accepts; listing them once
+    Kept in sync with the strategies fs_palm.solve accepts; listing them once
     means a rule added to the solver does not silently become "not a number"
     at the command line.
     """
@@ -107,14 +107,14 @@ def run_variants(inst, alphas, xis, tol, max_iter, delta=1.0, gamma0="auto",
     NOTE ON WHERE EACH CURVE STARTS. "rule1" sets nu_0 = nu_bar/(K+1)^alpha so
     that the open-loop schedule nu_k = nu_0 (k+1)^alpha passes through the
     scale-aware base at the horizon K; that couples nu_0 to alpha by design,
-    so BALM/P-BALM curves at different alpha legitimately start at different
+    so FS-ALM/FS-P-ALM curves at different alpha legitimately start at different
     penalties. It is meaningless for classic ALM, whose penalty grows
     multiplicatively and never uses alpha -- left alone ALM silently inherits
     the solver's DEFAULT alpha=2. `alm_rho0` names ALM's rule explicitly.
     """
-    problem = pbalm_problem(inst, pbalm, jittable=True)
+    problem = fs_palm_problem(inst, fs_palm, jittable=True)
     x0 = inst.x0()
-    # Multipliers start at ZERO, not at a random draw; see pbalm.solve's
+    # Multipliers start at ZERO, not at a random draw; see fs_palm.solve's
     # mu0 documentation.
 
     common = dict(tol=tol, max_iter=max_iter, start_feas=True,
@@ -123,7 +123,7 @@ def run_variants(inst, alphas, xis, tol, max_iter, delta=1.0, gamma0="auto",
     runs = []
 
     def go(label, **kw):
-        sol = pbalm.solve(problem, x0, **kw, **common)
+        sol = fs_palm.solve(problem, x0, **kw, **common)
         runs.append((label, sol))
         problem.reset_counters()
         x = np.asarray(sol.x)
@@ -305,7 +305,7 @@ def main():
     ap.add_argument("--m", type=int, default=50,
                     help="synthetic: two-sided linear constraints (2m rows)")
     ap.add_argument("--alphas", type=float, nargs="+", default=[1.01, 2, 8],
-                    help="alpha for BALM and P-BALM (default 12)")
+                    help="alpha for FS-ALM and FS-P-ALM (default 12)")
     ap.add_argument("--xis", type=int, nargs="+", default=[10],
                     help="xi for classic ALM (default 10)")
     ap.add_argument("--seed", type=int, default=1234)
@@ -319,7 +319,7 @@ def main():
                          "the inverse fraction of local curvature the "
                          "proximal term contributes")
     ap.add_argument("--penalty-rule", default="rule3",
-                    help='rho_0/nu_0 rule for BALM and P-BALM: "rule3" '
+                    help='rho_0/nu_0 rule for FS-ALM and FS-P-ALM: "rule3" '
                          '(default, curvature-matched with a short ramp), '
                          '"rule1", "auto", or a number')
     ap.add_argument("--penalty-ramp", type=float, default=5.0,

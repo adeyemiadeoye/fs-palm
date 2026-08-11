@@ -3,7 +3,7 @@
 Two modes:
 
   --mode multi   one instance, p=400, n=1024, sweeping the parameters: ALM
-                 at several xi, BALM and P-BALM at several alpha. Curves are
+                 at several xi, FS-ALM and FS-P-ALM at several alpha. Curves are
                  unlabelled and a separate legend file is written.
 
   --mode single  alpha = 4 and xi = 4 fixed, one column per problem size,
@@ -13,10 +13,10 @@ Two modes:
 Conventions:
 
     ALM-xi        xi > 1, phi(k) = 0, no Step-1 reset      (classic ALM)
-    BALM-alpha    xi = 1, phi(k) = (k+1)^alpha
-    P-BALM-alpha  as BALM plus the proximal term
+    FS-ALM-alpha    xi = 1, phi(k) = (k+1)^alpha
+    FS-P-ALM-alpha  as FS-ALM plus the proximal term
 
-xi = 1 always for BALM and P-BALM -- that is what defines them (Table 1);
+xi = 1 always for FS-ALM and FS-P-ALM -- that is what defines them (Table 1);
 the penalty grows through the schedule phi, not a multiplicative safeguard.
 Only classic ALM uses xi > 1. ALM is a heuristic here and is NOT supported by
 the paper's theory; it is retained as an ablation baseline.
@@ -53,19 +53,19 @@ matplotlib.use("Agg")     # these scripts only write PDFs; the default
                           # teardown ("main thread is not in main loop")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
+# Prefer this repo's solver over any installed fs_palm. A pip-installed fs_palm
 # in the same environment would otherwise shadow it and the script would
 # benchmark the published package instead of the working copy.
 import os as _os, sys as _sys
 _SRC = _os.path.join(_os.path.dirname(_os.path.dirname(
     _os.path.dirname(_os.path.abspath(__file__)))), "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+if _os.path.isdir(_os.path.join(_SRC, "fs_palm")) and _SRC not in _sys.path:
     _sys.path.insert(0, _SRC)
 
-import pbalm
+import fs_palm
 
-from pbalm.utils.plotting import setup_matplotlib, inner_solvers
-from bp_problem import make_instance, pbalm_problem
+from fs_palm.utils.plotting import setup_matplotlib, inner_solvers
+from bp_problem import make_instance, fs_palm_problem
 
 
 def style():
@@ -92,7 +92,7 @@ def run_variants(inst, alphas, xis, tol, max_iter, c0=1.0, delta="auto",
     PANOC, same converged solution either way: rule1 costs 2941 gradient
     evaluations, rule3 costs 385.
     """
-    problem = pbalm_problem(inst, pbalm, jittable=True)
+    problem = fs_palm_problem(inst, fs_palm, jittable=True)
     x0 = inst.x0(c=c0)                  # strictly feasible by construction
     # Multipliers start at ZERO, not at a random draw. The earlier random
     # start is not scale invariant (lambda carries units [f]/[c]) and, since it
@@ -111,7 +111,7 @@ def run_variants(inst, alphas, xis, tol, max_iter, c0=1.0, delta="auto",
     runs = []
 
     def go(label, **kw):
-        sol = pbalm.solve(problem, x0, **kw, **common)
+        sol = fs_palm.solve(problem, x0, **kw, **common)
         runs.append((label, sol))
         problem.reset_counters()
         x = np.asarray(sol.x)
@@ -231,7 +231,7 @@ _RULES = ("rule1", "rule3", "auto")
 def _as_rule(v):
     """Accept a named rule or a numeric value from the CLI.
 
-    Kept in sync with the strategies pbalm.solve accepts; listing them in one
+    Kept in sync with the strategies fs_palm.solve accepts; listing them in one
     place here means a rule added to the solver does not silently become
     "not a number" at the command line.
     """
@@ -358,7 +358,7 @@ def main():
                          '600,2048 for single mode; 400,1024 for multi)')
     ap.add_argument("--k", type=int, default=10, help="number of nonzeros")
     ap.add_argument("--alphas", type=float, nargs="+", default=None,
-                    help="alpha for BALM/P-BALM (default 4 for single mode, "
+                    help="alpha for FS-ALM/FS-P-ALM (default 4 for single mode, "
                          "4 6 9 12 for multi)")
     ap.add_argument("--xis", type=int, nargs="+", default=None,
                     help="xi for classic ALM (default 4 for single mode, "

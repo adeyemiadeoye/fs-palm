@@ -1,6 +1,6 @@
 class Result:
     """
-    Class to store the results of the PBALM solver.
+    Class to store the results of the FS-P-ALM solver.
     """
     def __init__(self, x, fp_res, kkt_res, total_infeas, f_hist, rho_hist, nu_hist, gamma_hist, prox_hist, solve_status, total_runtime, solve_runtime, grad_evals=None, n_inner_incomplete=0, n_outer=None, beta_test_fired=None, penalty_capped_at=None, rho0=None, nu0=None, gamma0=None, delta=None):
         """

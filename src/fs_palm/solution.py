@@ -1,6 +1,6 @@
 from .problem import GradEvalCounter
 from .result import Result
-from .pbalm import Solution
+from .fs_palm import Solution
 from jax import jacfwd
 import jax
 import jax.numpy as jnp
@@ -12,7 +12,7 @@ def solve(problem, x0, inner_solve_runner=None, lbda0=None, mu0=None, rho0="rule
             start_feas=True, inner_solver=None, pa_direction=None, pa_solver_opts=None, verbosity=1, max_runtime=24.0,
             phi_strategy="pow", feas_reset_interval=None, no_reset=False, adaptive_fp_tol=True, tau0=0.1, kappa_tol=0.5, penalty_horizon=30, penalty_ramp=5.0, penalty_kappa=1e2, delta_rule="objective", gamma_kappa=1e3, penalty_max=1e20, max_iter_inner=None, phase_I_residual=None):
     r"""
-    Calls the PBALM solver on the given problem instance.
+    Calls the FS-P-ALM solver on the given problem instance.
 
     Parameters:
         problem: An instance of the Problem class defining the optimization problem.
@@ -79,7 +79,7 @@ def solve(problem, x0, inner_solve_runner=None, lbda0=None, mu0=None, rho0="rule
         xi2: Penalty update scaling factor for inequality constraints (xi2 >= 1, xi2=1 for the paper algorithm).
         tol: Tolerance for convergence.
         fp_tol: Fixed-point tolerance for inner solver (if None, defaults to tol). Can be provided as a float or a function of iteration number k.
-        max_iter: Maximum number of PBALM iterations.
+        max_iter: Maximum number of FS-P-ALM iterations.
         phase_I_tol: Tolerance for Phase I feasibility problem.
         start_feas: Boolean indicating whether to start with Phase I feasibility optimization.
         inner_solver: "PANOC" (default, via alpaqa: forward-backward with an L-BFGS direction) or
@@ -129,7 +129,7 @@ def solve(problem, x0, inner_solve_runner=None, lbda0=None, mu0=None, rho0="rule
     # solve() replaces problem.h/problem.g with a single jitted function that
     # concatenates the user's list of constraints. Keep the original lists so
     # that passing the same Problem to solve() more than once (as the example
-    # scripts do, to compare ALM/BALM/P-BALM on one problem) rebuilds from the
+    # scripts do, to compare ALM/FS-ALM/FS-P-ALM on one problem) rebuilds from the
     # lists instead of trying to iterate the already-wrapped function.
     if problem.h is not None and not hasattr(problem, "_h_list"):
         problem._h_list = problem.h
@@ -199,7 +199,7 @@ def solve(problem, x0, inner_solve_runner=None, lbda0=None, mu0=None, rho0="rule
                         max_runtime=max_runtime, phi_strategy=phi_strategy, feas_reset_interval=feas_reset_interval,
                         no_reset=no_reset, adaptive_fp_tol=adaptive_fp_tol, tau0=tau0, kappa_tol=kappa_tol, penalty_horizon=penalty_horizon, penalty_ramp=penalty_ramp, delta_rule=delta_rule,
                         gamma_kappa=gamma_kappa, penalty_kappa=penalty_kappa, penalty_max=penalty_max, max_iter_inner=max_iter_inner, phase_I_residual=phase_I_residual)
-    solution.pbalm()
+    solution.fs_palm()
     res = Result(solution.x, solution.fp_res, solution.kkt_res, solution.total_infeas, solution.f_hist, solution.rho_hist, solution.nu_hist, solution.gamma_hist, solution.prox_hist, solution.solve_status, solution.total_runtime, solution.solve_runtime, grad_evals=getattr(solution, 'grad_evals', None),
                  n_inner_incomplete=getattr(solution, 'n_inner_incomplete', 0),
                  beta_test_fired=getattr(solution, 'beta_test_fired', None),

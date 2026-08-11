@@ -1,12 +1,5 @@
 import jax.numpy as jnp
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
-# in the same environment would otherwise shadow it and the script would
-# exercise the published package instead of the working copy.
-import os as _os, sys as _sys
-_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
-    _sys.path.insert(0, _SRC)
-import pbalm
+import fs_palm
 import numpy as np
 
 # Configure JAX
@@ -42,10 +35,10 @@ def g(x):
     return G @ x - h_ineq
 
 # Create and solve problem
-problem = pbalm.Problem(f1=f1, h=[h], g=[g], jittable=True)
+problem = fs_palm.Problem(f1=f1, h=[h], g=[g], jittable=True)
 x0 = jnp.ones(n) / n  # Start on simplex
 
-result = pbalm.solve(problem, x0, tol=1e-6)
+result = fs_palm.solve(problem, x0, tol=1e-6)
 
 print(f"Optimal x: {result.x}")
 eq_con = h(result.x)

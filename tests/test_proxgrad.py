@@ -5,19 +5,19 @@ this code, so verify it against problems with independently known answers
 rather than against PANOC (which would only show the two agree, not that
 either is right).
 """
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm in
+# Prefer this repo's solver over any installed fs_palm. A pip-installed fs_palm in
 # the same environment would otherwise shadow it and the test would exercise the
 # published package instead of the working copy. This must run BEFORE any
-# import of pbalm, including one buried in a comma-separated import line.
+# import of fs_palm, including one buried in a comma-separated import line.
 import os as _os, sys as _sys
 _SRC = _os.path.join(_os.path.dirname(_os.path.dirname(
     _os.path.abspath(__file__))), "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+if _os.path.isdir(_os.path.join(_SRC, "fs_palm")) and _SRC not in _sys.path:
     _sys.path.insert(0, _SRC)
 
-import numpy as np, jax, jax.numpy as jnp, pbalm, sys
+import numpy as np, jax, jax.numpy as jnp, fs_palm, sys
 jax.config.update("jax_platform_name", "cpu"); jax.config.update("jax_enable_x64", True)
-from pbalm.inner_solvers.inner_solvers import _make_prox, get_proxgrad_run, get_solver_run
+from fs_palm.inner_solvers.inner_solvers import _make_prox, get_proxgrad_run, get_solver_run
 
 fail = 0
 def check(name, ok, detail=""):
@@ -27,14 +27,14 @@ def check(name, ok, detail=""):
 
 print("=== 1. prox operators against closed forms ===")
 v = jnp.array([-3.0, -0.4, 0.0, 0.7, 5.0])
-prox, reg = _make_prox(f2=pbalm.L1Norm(0.5))
+prox, reg = _make_prox(f2=fs_palm.L1Norm(0.5))
 got = np.asarray(prox(v, 1.0))
 want = np.sign(np.asarray(v)) * np.maximum(np.abs(np.asarray(v)) - 0.5, 0.0)
 check("L1 soft-threshold (gamma=1)", np.allclose(got, want), f"max|d|={np.abs(got-want).max():.2e}")
 got = np.asarray(prox(v, 2.0)); want = np.sign(np.asarray(v))*np.maximum(np.abs(np.asarray(v))-1.0, 0.0)
 check("L1 soft-threshold (gamma=2)", np.allclose(got, want), f"max|d|={np.abs(got-want).max():.2e}")
 check("L1 reg value", np.isclose(float(reg(v)), 0.5*np.abs(np.asarray(v)).sum()))
-proxb, regb = _make_prox(f2=pbalm.Box(lower=np.full(5,-1.0), upper=np.full(5,1.0)))
+proxb, regb = _make_prox(f2=fs_palm.Box(lower=np.full(5, -1.0), upper=np.full(5, 1.0)))
 check("Box projection", np.allclose(np.asarray(proxb(v,1.0)), np.clip(np.asarray(v),-1,1)))
 
 print("\n=== 2. LASSO: ProxGrad vs cvxpy (convex, unique optimum) ===")
@@ -46,7 +46,7 @@ import cvxpy as cp
 xv = cp.Variable(n)
 cp.Problem(cp.Minimize(0.5*cp.sum_squares(A@xv-b) + lam*cp.norm1(xv))).solve(solver="CLARABEL")
 x_ref = xv.value
-runner = get_proxgrad_run(f2=pbalm.L1Norm(lam), jittable=True)
+runner = get_proxgrad_run(f2=fs_palm.L1Norm(lam), jittable=True)
 x_pg, st = runner.train_fun(f_smooth, jnp.zeros(n), 20000, 1e-10)
 x_pg = np.asarray(x_pg)
 F = lambda x: 0.5*np.sum((A@x-b)**2) + lam*np.abs(x).sum()
@@ -71,7 +71,7 @@ xv = cp.Variable(n)
 cp.Problem(cp.Minimize(0.5*cp.quad_form(xv, cp.psd_wrap(Q)) + q@xv),
            [xv >= -0.5, xv <= 0.5]).solve(solver="CLARABEL")
 x_ref = xv.value
-runner = get_proxgrad_run(f2=pbalm.Box(lower=np.full(n,-0.5), upper=np.full(n,0.5)), jittable=True)
+runner = get_proxgrad_run(f2=fs_palm.Box(lower=np.full(n, -0.5), upper=np.full(n, 0.5)), jittable=True)
 x_pg, st = runner.train_fun(f_qp, jnp.zeros(n), 50000, 1e-10)
 x_pg = np.asarray(x_pg)
 check("box-QP solution matches cvxpy", np.max(np.abs(x_pg-x_ref)) < 1e-6,

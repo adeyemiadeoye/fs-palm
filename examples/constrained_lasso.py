@@ -1,13 +1,6 @@
 import jax
 import jax.numpy as jnp
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
-# in the same environment would otherwise shadow it and the script would
-# exercise the published package instead of the working copy.
-import os as _os, sys as _sys
-_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
-    _sys.path.insert(0, _SRC)
-import pbalm
+import fs_palm
 import numpy as np
 
 #    \min_{\beta} \quad & \frac{1}{2n} \|y - X\beta\|_2^2 + \lambda \|\beta\|_1 \\
@@ -64,10 +57,10 @@ def g(beta):
     return -beta
 
 # L1 regularization
-f2 = pbalm.L1Norm(lmbda)
+f2 = fs_palm.L1Norm(lmbda)
 
 # Create problem
-problem = pbalm.Problem(
+problem = fs_palm.Problem(
     f1=f1,
     h=[h],
     g=[g],
@@ -79,7 +72,7 @@ problem = pbalm.Problem(
 beta0 = jnp.ones(n_features) / n_features
 
 # Solve
-result = pbalm.solve(
+result = fs_palm.solve(
     problem,
     beta0,
     tol=1e-6,

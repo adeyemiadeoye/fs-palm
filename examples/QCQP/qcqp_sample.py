@@ -4,16 +4,16 @@ same style as basis_pursuit.py / all_MM_QPs.py.
 Compares, on one representative instance:
 
     ALM-xi        xi = 10, phi(k) = 0, no Step-1 reset   (classic ALM)
-    BALM-alpha    xi = 1,  phi(k) = (k+1)^alpha          alpha in {2, 4, 8}
-    P-BALM-alpha  as BALM plus the proximal term         alpha in {2, 4, 8}
+    FS-ALM-alpha    xi = 1,  phi(k) = (k+1)^alpha          alpha in {2, 4, 8}
+    FS-P-ALM-alpha  as FS-ALM plus the proximal term         alpha in {2, 4, 8}
 
-xi = 1 always for BALM and P-BALM -- that is what defines them (Table 1);
+xi = 1 always for FS-ALM and FS-P-ALM -- that is what defines them (Table 1);
 the penalty grows through the schedule phi, not a multiplicative safeguard.
 Only classic ALM uses xi > 1, at the value standard in the literature
 (Bertsekas; ALGENCAN; LANCELOT) and found best in the manuscript's own
 experiments. One xi is plotted deliberately: more curves make the figure
 unreadable. Note the suffix differs by algorithm: ALM-10 is xi=10, while
-BALM-4 / P-BALM-4 are alpha=4.
+FS-ALM-4 / FS-P-ALM-4 are alpha=4.
 
 Outputs (PDF, house style):
     qcqp_sample_gradevals_infeas_<tag>.pdf   grad evals vs total infeasibility
@@ -41,19 +41,19 @@ matplotlib.use("Agg")     # only writes PDFs; the interactive backend
                           # crashes at teardown in this environment
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
+# Prefer this repo's solver over any installed fs_palm. A pip-installed fs_palm
 # in the same environment would otherwise shadow it and the script would
 # benchmark the published package instead of the working copy.
 import os as _os, sys as _sys
 _SRC = _os.path.join(_os.path.dirname(_os.path.dirname(
     _os.path.dirname(_os.path.abspath(__file__)))), "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
+if _os.path.isdir(_os.path.join(_SRC, "fs_palm")) and _SRC not in _sys.path:
     _sys.path.insert(0, _SRC)
 
-import pbalm
+import fs_palm
 
-from pbalm.utils.plotting import setup_matplotlib, inner_solvers
-from qcqp_problem import make_instance, pbalm_problem, solve_ipopt
+from fs_palm.utils.plotting import setup_matplotlib, inner_solvers
+from qcqp_problem import make_instance, fs_palm_problem, solve_ipopt
 
 
 def style():
@@ -90,7 +90,7 @@ class ObjectiveRecorder:
 def run_variants(inst, alphas, xi, tol, max_iter, delta="auto", gamma0="auto",
                  inner_solver="PANOC", beta=0.5):
     """One curve per algorithm/parameter combination, all from x0 = 0."""
-    problem = pbalm_problem(inst, pbalm, jittable=True)
+    problem = fs_palm_problem(inst, fs_palm, jittable=True)
     x0 = inst.x0()                      # strictly feasible by construction
     # rho0/nu0 are left at the solver default ("rule3", curvature matched);
     # gamma0/delta default to "auto". Hard-coding any of these would be wrong
@@ -108,7 +108,7 @@ def run_variants(inst, alphas, xi, tol, max_iter, delta="auto", gamma0="auto",
     def go(label, **kw):
         rec = ObjectiveRecorder(inst)
         problem.callback = rec
-        sol = pbalm.solve(problem, x0, **kw, **common)
+        sol = fs_palm.solve(problem, x0, **kw, **common)
         F = rec.aligned_objectives(sol)
         runs.append((label, sol, F))
         problem.callback = None

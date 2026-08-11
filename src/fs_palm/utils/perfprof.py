@@ -1,5 +1,5 @@
 """Performance profiles, shifted geometric means, and a solver-independent
-success criterion, for benchmarking P-BALM against other solvers.
+success criterion, for benchmarking FS-P-ALM against other solvers.
 
 Protocol follows the two references we settled on:
 

@@ -24,7 +24,7 @@ import sys
 
 import numpy as np
 
-SOLVERS = ["pbalm", "alpaqa_alm"]
+SOLVERS = ["fs_palm", "alpaqa_alm"]
 LABELS = [r"\texttt{FS-P-ALM}", r"\texttt{alpaqa ALM}"]
 EPS, FTOL = 1e-5, 1e-1
 
@@ -69,8 +69,8 @@ def fair_cost(tag):
 
 def main(panoc_tag, proxgrad_tag, out):
     sys.path.insert(0, "../../src")
-    from pbalm.utils.plotting import setup_matplotlib
-    from pbalm.utils import perfprof
+    from fs_palm.utils.plotting import setup_matplotlib
+    from fs_palm.utils import perfprof
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt

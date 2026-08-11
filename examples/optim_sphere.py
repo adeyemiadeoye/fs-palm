@@ -1,12 +1,5 @@
 import jax.numpy as jnp
-# Prefer this repo's solver over any installed pbalm. A pip-installed pbalm
-# in the same environment would otherwise shadow it and the script would
-# exercise the published package instead of the working copy.
-import os as _os, sys as _sys
-_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "src")
-if _os.path.isdir(_os.path.join(_SRC, "pbalm")) and _SRC not in _sys.path:
-    _sys.path.insert(0, _SRC)
-import pbalm
+import fs_palm
 import numpy as np
 
 # Configure JAX
@@ -28,13 +21,13 @@ def h(x):
     return jnp.sum(x**2) - 1.0
 
 # Create problem
-problem = pbalm.Problem(f1=f1, h=[h], jittable=True)
+problem = fs_palm.Problem(f1=f1, h=[h], jittable=True)
 
 # Initial point (will be projected to feasible)
 x0 = jnp.ones(n) / jnp.sqrt(n)
 
 # Solve
-result = pbalm.solve(
+result = fs_palm.solve(
     problem,
     x0,
     tol=1e-8,
@@ -44,7 +37,7 @@ result = pbalm.solve(
 # Analytical solution: x* = -c / ||c||
 x_analytical = -c / jnp.linalg.norm(c)
 
-print(f"PBALM solution: {result.x}")
+print(f"PFS-ALM solution: {result.x}")
 print(f"Analytical solution: {x_analytical}")
 print(f"Solution norm: {jnp.linalg.norm(result.x)}")
 print(f"Error: {jnp.linalg.norm(result.x - x_analytical):.2e}")

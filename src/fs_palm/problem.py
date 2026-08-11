@@ -1,14 +1,14 @@
 import numpy as np
 np.NaN = np.nan
 import jax
-import pbalm
+import fs_palm
 from jax import grad
 from .utils.utils import GradEvalCounter
 
 
 class Problem:
     """
-    Defines a general optimization problem for PBALM.
+    Defines a general optimization problem for PFS-ALM.
     """
     def __init__(self, f1, f2=None, f2_lbda=None, h=None, g=None, f1_grad=None, jittable=True, callback=None):
         """
@@ -17,9 +17,9 @@ class Problem:
         Parameters:
             f1: Smooth objective function --> f1(x)
             f2: Nonsmooth regularization function. Define as one of the following alpaqa proxop classes:
-                    - pbalm.L1Norm(lbda)
-                    - pbalm.Box(lower=lower, upper=upper)
-                    - pbalm.NuclearNorm(lbda)
+                    - fs_palm.L1Norm(lbda)
+                    - fs_palm.Box(lower=lower, upper=upper)
+                    - fs_palm.NuclearNorm(lbda)
                 See alpaqa documentation for details.
             f2_lbda: Regularization parameter (float or list)
             h: List of equality constraint functions --> h_i(x) = 0, e.g., h: [h_1, h_2, ..., h_m]
@@ -28,7 +28,7 @@ class Problem:
             h_grad: Gradient of the equality constraint functions --> h_grad(x)
             g_grad: Gradient of the inequality constraint functions --> g_grad(x)
             jittable: Boolean indicating if problem functions can be JIT-compiled (user provided functions should be JAX-compatible)
-            callback: Optional callback function called at each iteration of PBALM
+            callback: Optional callback function called at each iteration of PFS-ALM
                         callback(current_iter,
                                     x_{k},
                                     x_{k-1},
@@ -38,8 +38,8 @@ class Problem:
                                     nu_{k},
                                     gamma_{k},
                                     x_0)
-            lbda_sizes: Sizes of equality constraint multipliers (these are set automatically in PBALM.solve)
-            mu_sizes: Sizes of inequality constraint multipliers (these are set automatically in PBALM.solve)
+            lbda_sizes: Sizes of equality constraint multipliers (these are set automatically in PFS-ALM.solve)
+            mu_sizes: Sizes of inequality constraint multipliers (these are set automatically in PFS-ALM.solve)
         """
 
         self.f1 = jax.jit(f1) if jittable else f1
